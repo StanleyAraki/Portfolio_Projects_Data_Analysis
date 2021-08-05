@@ -58,3 +58,42 @@ Parcels_Sorted AS (
 SELECT count(ParcelID) FROM Parcels_Sorted; -- 22563
 
 
+
+-- What is the distribution of sale prices among houses with a single family land use? (Box and Whisker plot)
+    -- Need to get data filtered on single families
+    Select ParcelID, LandUse, SaleDate, SalePrice
+    FROM dbo.[Nashville Housing]
+    WHERE LandUse LIKE '%Single Family%'
+    ORDER BY ParcelID
+
+    -- Since the Sale Price changes based on the sale date for houses with the same parcel ID, we need to remove the older data using CTE
+
+    Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SaleDate, SalePrice
+    FROM dbo.[Nashville Housing]
+    WHERE LandUse LIKE '%Single Family%'
+    ORDER BY ParcelID -- puts rank on each data, where data with duplicate ParcelID are given ranks based on recency
+
+    -- Filter and query data
+    WITH Ranked_ParcelID AS (
+        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SaleDate, SalePrice
+        FROM dbo.[Nashville Housing]
+        WHERE LandUse LIKE '%Single Family%'
+    )
+    SELECT ParcelID, LandUse, SaleDate, SalePrice
+    FROM Ranked_ParcelID
+    WHERE Rank = 1
+    ORDER BY ParcelID
+
+    -- Data is filtered. Get count on data
+    WITH Ranked_ParcelID AS (
+        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SaleDate, SalePrice
+        FROM dbo.[Nashville Housing]
+        WHERE LandUse LIKE '%Single Family%'
+    ),
+    Filtered_Paracels AS (
+        SELECT ParcelID, LandUse, SaleDate, SalePrice
+        FROM Ranked_ParcelID
+        WHERE Rank = 1
+    )
+    SELECT Count(ParcelID) AS Row_Count
+    FROM Filtered_Paracels -- 30320
