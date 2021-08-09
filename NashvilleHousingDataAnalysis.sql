@@ -68,32 +68,54 @@ SELECT count(ParcelID) FROM Parcels_Sorted; -- 22563
 
     -- Since the Sale Price changes based on the sale date for houses with the same parcel ID, we need to remove the older data using CTE
 
-    Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SaleDate, SalePrice
+    Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SalePrice
     FROM dbo.[Nashville Housing]
     WHERE LandUse LIKE '%Single Family%'
     ORDER BY ParcelID -- puts rank on each data, where data with duplicate ParcelID are given ranks based on recency
 
     -- Filter and query data
     WITH Ranked_ParcelID AS (
-        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SaleDate, SalePrice
+        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SalePrice
         FROM dbo.[Nashville Housing]
         WHERE LandUse LIKE '%Single Family%'
     )
-    SELECT ParcelID, LandUse, SaleDate, SalePrice
+    SELECT ParcelID, LandUse, SalePrice
     FROM Ranked_ParcelID
     WHERE Rank = 1
     ORDER BY ParcelID
 
     -- Data is filtered. Get count on data
     WITH Ranked_ParcelID AS (
-        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SaleDate, SalePrice
+        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SalePrice
         FROM dbo.[Nashville Housing]
         WHERE LandUse LIKE '%Single Family%'
     ),
     Filtered_Paracels AS (
-        SELECT ParcelID, LandUse, SaleDate, SalePrice
+        SELECT ParcelID, LandUse, SalePrice
         FROM Ranked_ParcelID
         WHERE Rank = 1
     )
     SELECT Count(ParcelID) AS Row_Count
     FROM Filtered_Paracels -- 30320
+
+
+-- Which tax district is the cheapest(based on Sale Price) for single family 
+
+Select ParcelID, LandUse, SalePrice, TaxDistrict
+    FROM dbo.[Nashville Housing]
+    WHERE LandUse LIKE '%Single Family%' AND TaxDistrict IS NOT NULL
+    ORDER BY ParcelID -- puts rank on each data, where data with duplicate ParcelID are given ranks based on recency
+
+    -- filter data to remove duplicates. Older duplicate data will be removed using CTE
+WITH Ranked_ParcelID AS (
+        Select Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC), ParcelID, LandUse, SalePrice, TaxDistrict
+        FROM dbo.[Nashville Housing]
+        WHERE LandUse LIKE '%Single Family%' AND TaxDistrict IS NOT NULL
+    )
+    SELECT ParcelID, LandUse, SalePrice, TaxDistrict
+    FROM Ranked_ParcelID
+    WHERE Rank = 1
+    ORDER BY TaxDistrict
+
+-- To what extent does the number of bedrooms, fullbaths, halfbaths, acreage impact the sale price of houses for single families?
+    -- Want to find trends using visualization
