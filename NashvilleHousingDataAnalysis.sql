@@ -119,3 +119,20 @@ WITH Ranked_ParcelID AS (
 
 -- To what extent does the number of bedrooms, fullbaths, halfbaths, acreage impact the sale price of houses for single families?
     -- Want to find trends using visualization
+
+SELECT Bedrooms, FullBath, HalfBath, Acreage, SalePrice
+FROM dbo.[Nashville Housing]
+WHERE SalePrice IS NOT NULL AND Bedrooms IS NOT NULL AND LandUse LIKE '%SINGLE FAMILY%'
+    -- Remove duplicate data using CTE
+SELECT Bedrooms, FullBath, HalfBath, Acreage, SalePrice, Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC)
+FROM dbo.[Nashville Housing]
+WHERE SalePrice IS NOT NULL AND Bedrooms IS NOT NULL AND LandUse LIKE '%Single Family%'
+
+WITH Filtered_Parcels AS (
+    SELECT Bedrooms, FullBath, HalfBath, Acreage, SalePrice, Rank = RANK()OVER(PARTITION BY ParcelID ORDER BY SaleDate DESC)
+    FROM dbo.[Nashville Housing]
+    WHERE SalePrice IS NOT NULL AND Bedrooms IS NOT NULL AND LandUse LIKE '%Single Family%'
+)
+SELECT Bedrooms, FullBath, HalfBath, Acreage, SalePrice
+FROM Filtered_Parcels
+WHERE Rank = 1;
